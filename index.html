@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Sketch Night</title>
+<style>
+html,body{margin:0;padding:0;background:#000;color:#fff;font-family:monospace;}
+#startScreen{
+ position:fixed;inset:0;background:#000;z-index:999;
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+canvas{display:block;}
+#ui{position:fixed;bottom:0;width:100%;background:#111;padding:8px;}
+button{width:32%;padding:12px;font-size:14px;border:none;border-radius:8px;background:#222;color:#fff;}
+.meter{height:8px;background:#333;border-radius:5px;overflow:hidden;margin-top:6px;}
+.meter div{height:100%;background:#f0d060;}
+</style>
+</head>
+<body>
+
+<div id="startScreen">
+ <h1>SKETCH NIGHT</h1>
+ <p>TAP TO START</p>
+</div>
+
+<canvas id="c"></canvas>
+
+<div id="ui">
+ <button id="camBtn">CAM</button>
+ <button id="leftBtn">LEFT</button>
+ <button id="rightBtn">RIGHT</button>
+ <div class="meter"><div id="powerBar"></div></div>
+</div>
+
+<script>
+const c = document.getElementById("c");
+const ctx = c.getContext("2d");
+function resize(){c.width=innerWidth;c.height=innerHeight-120}
+addEventListener("resize",resize);resize();
+
+let started=false,power=1,time=0,doorL=false,doorR=false,cam=false,scare=false,frame=0;
+const scream=new Audio("scream.mp3");
+
+startScreen.onclick=()=>{
+ started=true;
+ scream.play().then(()=>scream.pause());
+ startScreen.style.display="none";
+}
+
+camBtn.onclick=()=>cam=!cam;
+leftBtn.onclick=()=>doorL=!doorL;
+rightBtn.onclick=()=>doorR=!doorR;
+
+const frames=[];
+for(let i=0;i<5;i++){let img=new Image();img.src=`jumpscare/frame${i}.png`;frames.push(img);}
+
+function jumpscare(){
+ ctx.fillStyle="#000";ctx.fillRect(0,0,c.width,c.height);
+ let img=frames[Math.min(frame,frames.length-1)];
+ let s=1+frame*0.3;
+ ctx.drawImage(img,c.width/2-img.width*s/2,c.height/2-img.height*s/2,img.width*s,img.height*s);
+ frame++;
+ if(frame==2){scream.currentTime=0;scream.play();}
+ if(frame<15)requestAnimationFrame(jumpscare);
+ else{ctx.fillStyle="#fff";ctx.font="32px monospace";ctx.fillText("GAME OVER",c.width/2-90,c.height/2);}
+}
+
+function loop(){
+ if(!started||scare)return;
+ ctx.clearRect(0,0,c.width,c.height);
+ power-=0.0004+(cam?0.0006:0)+(doorL||doorR?0.0006:0);
+ power=Math.max(0,power);
+ powerBar.style.width=(power*100)+"%";
+ ctx.strokeStyle="#fff";
+ ctx.strokeRect(40,40,c.width-80,c.height-160);
+ if(power<=0.2&&!doorL&&!doorR){scare=true;jumpscare();}
+ requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
